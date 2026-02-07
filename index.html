@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>War of the Worlds - Prototype</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="ui">
+        <div style="margin-bottom: 15px;">
+            <div>Vehicle 1 HP: <span id="hp-text-1">100</span></div>
+            <div id="hp-bar" style="width: 200px; height: 20px; background: rgba(255,0,0,0.3); border: 2px solid white; margin-top: 5px;">
+                <div id="hp-fill-1" style="height: 100%; background: linear-gradient(to right, #ff0000, #ff6600); transition: width 0.3s; width: 100%;"></div>
+            </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <div>Vehicle 2 HP: <span id="hp-text-2">100</span></div>
+            <div id="hp-bar" style="width: 200px; height: 20px; background: rgba(255,0,0,0.3); border: 2px solid white; margin-top: 5px;">
+                <div id="hp-fill-2" style="height: 100%; background: linear-gradient(to right, #ff0000, #ff6600); transition: width 0.3s; width: 100%;"></div>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">Tripods Destroyed: <span id="score">0</span></div>
+        <div style="margin-top: 10px; color: #00ff00;">Active: <span id="active-vehicle">Vehicle 1 (Machine Gun)</span></div>
+    </div>
+    <div id="enemy-ui" style="position: absolute; top: 20px; right: 20px; color: white; font-size: 18px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: none;">
+        <div>Enemy Health: <span id="enemy-hp-text">200</span>/200</div>
+        <div id="enemy-hp-bar" style="width: 200px; height: 30px; background: rgba(192,192,192,0.3); border: 2px solid white; margin-top: 10px;">
+            <div id="enemy-hp-fill" style="height: 100%; background: linear-gradient(to right, #c0c0c0, #ffffff); transition: width 0.3s; width: 100%;"></div>
+        </div>
+    </div>
+    <div id="controls">
+        <div>WASD - Move</div>
+        <div>Mouse - Look Around</div>
+        <div>SPACE - Shoot</div>
+        <div>P - Pause</div>
+        <div>1/2 - Switch Vehicle</div>
+        <div style="margin-top: 10px; color: #ff6666;">WARNING: Heat Ray active when near tripods!</div>
+    </div>
+    <div id="message"></div>
+    <div id="pause-indicator">PAUSED</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
