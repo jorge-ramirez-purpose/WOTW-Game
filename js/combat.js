@@ -8,9 +8,24 @@ import { updateEnemyHP, hideEnemyUI } from './ui.js';
 const shotSound = new Audio('assets/sounds/machine-gun-shot.mp3');
 shotSound.preload = 'auto';
 
+// Cannon constants
+const GRAVITY = 0.03;
+const CANNON_DAMAGE = 20;
+const MACHINEGUN_DAMAGE = 10;
+export const MACHINEGUN_FIRE_RATE = 250;  // 4 bullets/second
+export const CANNON_FIRE_RATE = 1000;     // 1 shot/second
+
 export function shoot() {
     if (!activeVehicle || !activeVehicle.isAlive || gameState.isPaused) return;
 
+    if (activeVehicle.type === 'cannon') {
+        shootCannon();
+    } else {
+        shootMachineGun();
+    }
+}
+
+function shootMachineGun() {
     const projectileGeometry = new THREE.SphereGeometry(0.2);
     const projectileMaterial = new THREE.MeshStandardMaterial({
         color: 0xffff00,
@@ -18,48 +33,123 @@ export function shoot() {
     });
     const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
 
-    // Start at active vehicle's barrel position
     const barrelWorldPos = new THREE.Vector3();
     activeVehicle.barrel.getWorldPosition(barrelWorldPos);
     projectile.position.copy(barrelWorldPos);
 
-    // Shoot in active vehicle's forward direction
     const direction = new THREE.Vector3(0, 0, -1);
     direction.applyQuaternion(activeVehicle.quaternion);
     projectile.userData.velocity = direction.multiplyScalar(1.5);
+    projectile.userData.gravity = false;
+    projectile.userData.damage = MACHINEGUN_DAMAGE;
 
     scene.add(projectile);
     projectiles.push(projectile);
 
-    // Play shot sound (cloneNode allows overlapping rapid-fire playback)
+    // Play shot sound
     const sfx = shotSound.cloneNode();
     sfx.volume = 0.5;
     sfx.play();
 }
 
+function shootCannon() {
+    const projectileGeometry = new THREE.SphereGeometry(0.4);
+    const projectileMaterial = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        metalness: 0.8,
+        roughness: 0.3
+    });
+    const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+
+    const barrelWorldPos = new THREE.Vector3();
+    activeVehicle.barrel.getWorldPosition(barrelWorldPos);
+    projectile.position.copy(barrelWorldPos);
+
+    // Direction from the barrel pivot's world orientation (includes elevation angle)
+    const direction = new THREE.Vector3(0, 0, -1);
+    activeVehicle.barrelPivot.getWorldQuaternion(projectile.quaternion);
+    direction.applyQuaternion(projectile.quaternion);
+    projectile.userData.velocity = direction.multiplyScalar(1.0);
+    projectile.userData.gravity = true;
+    projectile.userData.damage = CANNON_DAMAGE;
+
+    scene.add(projectile);
+    projectiles.push(projectile);
+
+    // TODO: add cannon shot sound when asset is available
+}
+
+function applyHitToTripod(tripod, damage, hitPart) {
+    gameState.lastAttackedEnemy = tripod;
+
+    tripod.userData.health -= damage;
+    tripod.userData.legsHit++;
+
+    updateEnemyHP(tripod.userData.health, tripod.userData.maxHealth);
+
+    // Visual feedback - flash the hit part red
+    hitPart.material = hitPart.material.clone();
+    hitPart.material.color.set(0xff0000);
+    hitPart.material.emissive.set(0xff0000);
+    hitPart.material.emissiveIntensity = 0.8;
+
+    setTimeout(() => {
+        if (tripod && tripod.userData && tripod.userData.isAlive && hitPart && hitPart.material) {
+            hitPart.material.color.set(0xffffff);
+            hitPart.material.emissive.set(0x000000);
+            hitPart.material.emissiveIntensity = 0;
+        }
+    }, 200);
+
+    if (tripod.userData.health <= 0) {
+        destroyTripod(tripod);
+        if (gameState.lastAttackedEnemy === tripod) {
+            hideEnemyUI();
+            gameState.lastAttackedEnemy = null;
+        }
+    }
+}
+
 export function updateProjectiles() {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const proj = projectiles[i];
+
+        // Apply gravity to cannon projectiles
+        if (proj.userData.gravity) {
+            proj.userData.velocity.y -= GRAVITY;
+        }
+
         proj.position.add(proj.userData.velocity);
 
-        // Check collision with tripod legs
+        // Check collision with tripods (legs + body)
         let hit = false;
         tripods.forEach(tripod => {
             if (!tripod.userData.isAlive || hit) return;
 
+            // Check body sphere (radius 1.5, at y=8 relative to tripod)
+            const bodyWorldPos = new THREE.Vector3();
+            tripod.body.getWorldPosition(bodyWorldPos);
+            const bodyDist = proj.position.distanceTo(bodyWorldPos);
+            const bodyHitRadius = 1.5 + 0.5; // sphere radius + buffer
+
+            if (bodyDist < bodyHitRadius) {
+                hit = true;
+                applyHitToTripod(tripod, proj.userData.damage, tripod.body);
+                return;
+            }
+
+            // Check leg cylinders
             tripod.legs.forEach(leg => {
                 if (hit) return;
 
                 const legWorldPos = new THREE.Vector3();
                 leg.getWorldPosition(legWorldPos);
 
-                // Check horizontal distance (ignore Y)
                 const horizontalDist = Math.sqrt(
                     Math.pow(proj.position.x - legWorldPos.x, 2) +
                     Math.pow(proj.position.z - legWorldPos.z, 2)
                 );
 
-                // Check if bullet is within cylinder bounds
                 const legRadius = 0.3;
                 const hitRadius = legRadius + 0.5;
                 const legBottom = legWorldPos.y - 4;
@@ -70,44 +160,14 @@ export function updateProjectiles() {
                     proj.position.y <= legTop) {
 
                     hit = true;
-
-                    gameState.lastAttackedEnemy = tripod;
-
-                    // Deal 20 damage
-                    tripod.userData.health -= 20;
-                    tripod.userData.legsHit++;
-
-                    // Update enemy health bar
-                    updateEnemyHP(tripod.userData.health, tripod.userData.maxHealth);
-
-                    // Visual feedback - flash the leg red
-                    leg.material = leg.material.clone();
-                    leg.material.color.set(0xff0000);
-                    leg.material.emissive.set(0xff0000);
-                    leg.material.emissiveIntensity = 0.8;
-
-                    setTimeout(() => {
-                        if (tripod && tripod.userData && tripod.userData.isAlive && leg && leg.material) {
-                            leg.material.color.set(0xffffff);
-                            leg.material.emissive.set(0x000000);
-                            leg.material.emissiveIntensity = 0;
-                        }
-                    }, 200);
-
-                    // Destroy tripod if health depleted
-                    if (tripod.userData.health <= 0) {
-                        destroyTripod(tripod);
-                        if (gameState.lastAttackedEnemy === tripod) {
-                            hideEnemyUI();
-                            gameState.lastAttackedEnemy = null;
-                        }
-                    }
+                    applyHitToTripod(tripod, proj.userData.damage, leg);
                 }
             });
         });
 
-        // Remove projectile if hit or out of bounds
-        if (hit || proj.position.length() > 100) {
+        // Remove projectile if hit, hit ground, or out of bounds
+        const hitGround = proj.userData.gravity && proj.position.y <= 0;
+        if (hit || hitGround || proj.position.length() > 100) {
             scene.remove(proj);
             projectiles.splice(i, 1);
         }
@@ -138,7 +198,6 @@ export function updateHeatRays(delta) {
         const heatRayRange = 10;
 
         if (closestDistance < heatRayRange) {
-            // Track when player first entered range
             if (tripod.userData.heatRayActivationTime === null) {
                 tripod.userData.heatRayActivationTime = currentTime;
             }
@@ -146,7 +205,6 @@ export function updateHeatRays(delta) {
             const timeInRange = currentTime - tripod.userData.heatRayActivationTime;
             const activationDelay = 1000;
 
-            // Only apply damage after 1 second delay
             if (timeInRange >= activationDelay) {
                 takeDamage(closestVehicle, 5 * delta);
                 if (tripod.heatRay && tripod.heatRay.material) {
@@ -155,7 +213,6 @@ export function updateHeatRays(delta) {
                     tripod.heatRay.material.emissive.set(0xff0000);
                 }
             } else {
-                // Charging up - pulsing slowly in white
                 if (tripod.heatRay && tripod.heatRay.material) {
                     tripod.heatRay.material.emissiveIntensity = 0.5 + (timeInRange / activationDelay) * 0.5;
                     tripod.heatRay.material.color.set(0xffffff);
@@ -163,7 +220,6 @@ export function updateHeatRays(delta) {
                 }
             }
 
-            // Show beam from tripod to closest vehicle
             if (!tripod.warningBeam) {
                 const beamGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
                 const beamMaterial = new THREE.MeshBasicMaterial({
@@ -175,7 +231,6 @@ export function updateHeatRays(delta) {
                 scene.add(tripod.warningBeam);
             }
 
-            // Update beam position and orientation
             const tripodTopPos = new THREE.Vector3();
             tripod.heatRay.getWorldPosition(tripodTopPos);
 
@@ -190,14 +245,12 @@ export function updateHeatRays(delta) {
             tripod.warningBeam.lookAt(targetVehiclePos);
             tripod.warningBeam.rotateX(Math.PI / 2);
 
-            // Update color and opacity based on activation
             if (tripod.warningBeam && tripod.warningBeam.material) {
                 tripod.warningBeam.material.color.set(timeInRange >= activationDelay ? 0xff0000 : 0xffffff);
                 tripod.warningBeam.material.opacity = timeInRange >= activationDelay ? 0.6 : 0.3;
             }
 
         } else {
-            // Player left range - reset
             tripod.userData.heatRayActivationTime = null;
             if (tripod.heatRay && tripod.heatRay.material) {
                 tripod.heatRay.material.emissiveIntensity = 0.5;

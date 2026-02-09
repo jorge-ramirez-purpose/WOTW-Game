@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { scene, vehicles, activeVehicle, setActiveVehicle } from './state.js';
 import { updateVehicleHP, updateActiveVehicleLabel, showGameOver } from './ui.js';
 
-function createSingleVehicle(color, x, y, z) {
+function createSingleVehicle(color, x, y, z, type) {
     const geometry = new THREE.BoxGeometry(2, 1, 3);
     const material = new THREE.MeshStandardMaterial({ color });
     const vehicle = new THREE.Mesh(geometry, material);
@@ -11,22 +11,40 @@ function createSingleVehicle(color, x, y, z) {
     vehicle.hp = 100;
     vehicle.maxHp = 100;
     vehicle.isAlive = true;
+    vehicle.type = type;
     scene.add(vehicle);
 
-    // Barrel
-    const barrelGeometry = new THREE.BoxGeometry(0.3, 0.3, 2);
-    const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-    const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-    barrel.position.set(0, 0.5, -2);
-    vehicle.add(barrel);
-    vehicle.barrel = barrel;
+    if (type === 'cannon') {
+        // Cannon uses a pivot group so the barrel can tilt up/down
+        const barrelPivot = new THREE.Group();
+        barrelPivot.position.set(0, 0.5, -1);
+        vehicle.add(barrelPivot);
+        vehicle.barrelPivot = barrelPivot;
+        vehicle.barrelAngle = 0;
+
+        // Thicker, shorter barrel for cannon look
+        const barrelGeometry = new THREE.BoxGeometry(0.5, 0.5, 1.5);
+        const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+        barrel.position.set(0, 0, -0.75);
+        barrelPivot.add(barrel);
+        vehicle.barrel = barrel;
+    } else {
+        // Machine gun barrel (original)
+        const barrelGeometry = new THREE.BoxGeometry(0.3, 0.3, 2);
+        const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+        const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+        barrel.position.set(0, 0.5, -2);
+        vehicle.add(barrel);
+        vehicle.barrel = barrel;
+    }
 
     return vehicle;
 }
 
 export function createVehicles() {
-    const vehicle1 = createSingleVehicle(0xd2b48c, 0, 0.5, 0);
-    const vehicle2 = createSingleVehicle(0x8b7355, 10, 0.5, 0);
+    const vehicle1 = createSingleVehicle(0xd2b48c, 0, 0.5, 0, 'machinegun');
+    const vehicle2 = createSingleVehicle(0x556b2f, 10, 0.5, 0, 'cannon');
 
     vehicles.push(vehicle1, vehicle2);
     setActiveVehicle(vehicles[0], 0);
@@ -63,7 +81,7 @@ export function takeDamage(vehicle, amount) {
                 if (vehicle === activeVehicle) {
                     const newIndex = vehicles.indexOf(aliveVehicles[0]);
                     setActiveVehicle(aliveVehicles[0], newIndex);
-                    updateActiveVehicleLabel(newIndex + 1);
+                    updateActiveVehicleLabel(newIndex + 1, aliveVehicles[0].type);
                 }
             }
         }, 1000);

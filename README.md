@@ -7,12 +7,20 @@ Battle against Martian tripods using multiple vehicles with different capabiliti
 ![Game Screenshot](docs/screenshot.png)
 *Screenshot placeholder - add your own gameplay image*
 
-## 🎮 Features
+## Features
 
 ### Dual Vehicle System
 Control two different combat vehicles and switch between them on the fly:
 - **Vehicle 1 (Machine Gun)**: Sand-colored rapid-fire vehicle - your primary assault unit
-- **Vehicle 2**: Brown-colored vehicle *(Cannon variant coming soon)*
+- **Vehicle 2 (Cannon)**: Olive-green vehicle with an adjustable barrel that fires parabolic cannonballs
+
+### Cannon Mechanics
+The cannon introduces artillery-style gameplay:
+- Adjust barrel elevation from 0° (horizontal) to 90° (vertical) using **Q/E**
+- Cannonballs follow a realistic parabolic arc affected by gravity
+- Higher angles = longer range but harder to aim
+- Deals **50 damage** per hit (vs 20 for machine gun) with a slower fire rate
+- Approximate ranges: 0° ~12 units, 30° ~44 units, 45° ~50 units (max)
 
 ### Intelligent Enemy AI
 Face off against white metallic Martian tripods that:
@@ -28,40 +36,36 @@ Face off against white metallic Martian tripods that:
 - Strategic sacrifice: use one as a decoy while attacking with the other
 
 ### Dynamic Combat
-- **Tripod Stats**: 200 HP, requires 10 direct hits to destroy
+- **Tripod Stats**: 200 HP, destroyed by machine gun (10 hits) or cannon (4 hits)
 - **Heat Ray**: 10-unit range, 5 damage/second after 1s charge
 - **Visual Feedback**: White charging beam → Red active beam
 - **Leg Targeting**: Hit detection on all three tripod legs
 - Random enemy spawn positions each game
 
-## 🎯 Controls
+## Controls
 
 | Key | Action |
 |-----|--------|
 | **W/A/S/D** | Move active vehicle |
 | **Mouse** | Look around |
 | **SPACE** | Fire weapon |
-| **1** | Switch to Vehicle 1 |
-| **2** | Switch to Vehicle 2 |
+| **Q** | Lower cannon barrel |
+| **E** | Raise cannon barrel |
+| **1** | Switch to Vehicle 1 (Machine Gun) |
+| **2** | Switch to Vehicle 2 (Cannon) |
 | **P** | Pause/Unpause |
 
-## 🚀 Getting Started
-
-### Quick Play (No Installation)
-1. Download `index.html`
-2. Open it in your browser
-3. Start playing!
+## Getting Started
 
 ### Local Development
+The game uses ES modules, so a local server is required:
+
 ```bash
 # Clone the repository
 git clone https://github.com/YOUR_USERNAME/war-of-worlds-game.git
 cd war-of-worlds-game
 
-# Option 1: Open directly
-# Just double-click index.html
-
-# Option 2: Use a local server (recommended)
+# Use a local server (required for ES modules)
 python -m http.server 8000
 # or
 npx serve
@@ -69,55 +73,53 @@ npx serve
 # Then open http://localhost:8000
 ```
 
-## 🎯 Win/Lose Conditions
+## Win/Lose Conditions
 
-**Victory** 🏆
+**Victory**
 - Destroy all 4 Martian tripods
 - At least one vehicle must survive
 
-**Defeat** ☠️
+**Defeat**
 - Both vehicles destroyed
 - No second chances!
 
-## 🛠️ Technical Details
+## Technical Details
 
 ### Built With
-- **Three.js (r128)** - 3D rendering engine
-- **Vanilla JavaScript** - No frameworks, no build tools
-- **HTML5** - Single self-contained file
-
-### Performance
-- **File Size**: ~35KB
-- **Dependencies**: Three.js loaded from CDN
-- **Requirements**: Any modern browser with WebGL support
+- **Three.js (r160)** - 3D rendering engine
+- **Vanilla JavaScript** - ES modules, no frameworks, no build tools
+- **HTML5/CSS3** - Modular file structure
 
 ### Browser Support
 | Browser | Support |
 |---------|---------|
-| Chrome/Edge | ✅ Recommended |
-| Firefox | ✅ Fully supported |
-| Safari | ✅ Supported |
-| Mobile | ⚠️ Playable but not optimized |
+| Chrome/Edge | Recommended |
+| Firefox | Fully supported |
+| Safari | Supported |
+| Mobile | Playable but not optimized |
 
-## 📊 Game Balance
+## Game Balance
 
-| Unit | HP | Damage | Speed | Range |
-|------|----|----|-------|-------|
-| Player Vehicle | 100 | 20/hit | 10 units/s | Infinite |
-| Martian Tripod | 200 | 5/s | 5 units/s | 10 units |
+| Unit | HP | Damage | Speed | Fire Rate | Range |
+|------|----|--------|-------|-----------|-------|
+| Machine Gun Vehicle | 100 | 20/hit | 10 units/s | 200ms | Infinite (flat) |
+| Cannon Vehicle | 100 | 50/hit | 10 units/s | 1500ms | ~50 units (arc) |
+| Martian Tripod | 200 | 5/s | 5 units/s | Continuous | 10 units |
 
 **Detection Range**: 20 units
 **Projectile Speed**: 1.5 units/frame
+**Cannon Gravity**: 0.03 units/frame²
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Version 0.2.0 (In Progress)
-- [ ] Cannon vehicle with arc projectiles
+- [x] Cannon vehicle with arc projectiles
+- [x] Modular file architecture (ES modules)
+- [x] Machine gun sound effect
+- [ ] Cannon sound effect
 - [ ] Bonus damage for hitting tripod body (sphere)
-- [ ] Differentiated vehicle models (slim/tall cannon)
 
 ### Future Versions
-- [ ] Sound effects & music
 - [ ] Particle effects (explosions, impacts)
 - [ ] Multiple levels/waves
 - [ ] Power-ups and vehicle upgrades
@@ -126,62 +128,47 @@ npx serve
 - [ ] Mobile touch controls
 - [ ] Leaderboard/scoring system
 
-## 🤝 Contributing
-
-Contributions are welcome! Here's how:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Test in multiple browsers
-5. Commit (`git commit -m 'Add amazing feature'`)
-6. Push (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Development Guidelines
-- Keep everything in a single HTML file
-- Test in Chrome, Firefox, and Safari
-- Comment complex Three.js logic
-- Update CHANGELOG.md
-
-## 📝 Project Structure
+## Project Structure
 
 ```
-war-of-worlds-game/
-├── index.html          # Complete game (self-contained)
-├── README.md           # You are here
-├── CHANGELOG.md        # Version history
-├── GIT_SETUP.md        # Git workflow instructions
-└── .gitignore         # Git ignore rules
+WOTW-Game/
+├── index.html              # HTML structure + Three.js importmap
+├── css/
+│   └── style.css           # All UI styles
+├── js/
+│   ├── main.js             # Entry point, game loop, camera
+│   ├── state.js            # Shared game state
+│   ├── scene.js            # Three.js scene setup
+│   ├── vehicles.js         # Vehicle creation and damage
+│   ├── tripods.js          # Enemy tripod AI and spawning
+│   ├── combat.js           # Shooting, projectiles, heat ray
+│   ├── input.js            # Keyboard/mouse handling
+│   └── ui.js               # DOM UI updates
+├── assets/
+│   └── sounds/
+│       └── machine-gun-shot.mp3
+├── README.md
+├── CONTRIBUTING.md
+└── .gitignore
 ```
 
-## 🎨 Inspiration
+## Inspiration
 
 This project is inspired by:
 - Jeff Wayne's Musical Version of The War of the Worlds
 - The original War of the Worlds PSX game
 - Classic arcade shooters
 
-## 📸 Screenshots
-
-*Coming soon - add your gameplay screenshots here!*
-
-## 📄 License
+## License
 
 This is a prototype/demo project. Feel free to use and modify.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Jeff Wayne for the incredible musical adaptation
 - H.G. Wells for the original novel
 - Three.js team for the amazing 3D engine
 
-## 📞 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/war-of-worlds-game/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/war-of-worlds-game/discussions)
-
 ---
 
-**Made with ❤️ and Three.js** | [Report Bug](https://github.com/YOUR_USERNAME/war-of-worlds-game/issues) | [Request Feature](https://github.com/YOUR_USERNAME/war-of-worlds-game/issues)
-
+**Made with Three.js** | [Report Bug](https://github.com/YOUR_USERNAME/war-of-worlds-game/issues) | [Request Feature](https://github.com/YOUR_USERNAME/war-of-worlds-game/issues)

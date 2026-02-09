@@ -16,6 +16,7 @@ function createTripod(x, z) {
     body.position.y = 8;
     body.castShadow = true;
     tripod.add(body);
+    tripod.body = body;
 
     // Three legs in triangle formation
     const legGeometry = new THREE.CylinderGeometry(0.3, 0.3, 8);

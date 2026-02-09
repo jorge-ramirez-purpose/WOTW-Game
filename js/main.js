@@ -3,8 +3,9 @@ import { scene, camera, renderer, vehicles, tripods, activeVehicle, gameState, k
 import { initScene } from './scene.js';
 import { createVehicles } from './vehicles.js';
 import { spawnTripods } from './tripods.js';
-import { updateProjectiles, updateHeatRays } from './combat.js';
+import { shoot, updateProjectiles, updateHeatRays, MACHINEGUN_FIRE_RATE, CANNON_FIRE_RATE } from './combat.js';
 import { initInput } from './input.js';
+import { updateCannonAngle } from './ui.js';
 
 // Initialize everything
 initScene();
@@ -38,6 +39,19 @@ function updateVehicleMovement(delta) {
 
         // Keep active vehicle on ground
         activeVehicle.position.y = 0.5;
+
+        // Cannon barrel angle control (Q/E)
+        if (activeVehicle.type === 'cannon') {
+            const aimSpeed = 1.5 * delta;
+            if (keys['KeyE']) {
+                activeVehicle.barrelAngle = Math.min(Math.PI / 2, activeVehicle.barrelAngle + aimSpeed);
+            }
+            if (keys['KeyQ']) {
+                activeVehicle.barrelAngle = Math.max(0, activeVehicle.barrelAngle - aimSpeed);
+            }
+            activeVehicle.barrelPivot.rotation.x = activeVehicle.barrelAngle;
+            updateCannonAngle(Math.round(activeVehicle.barrelAngle * (180 / Math.PI)));
+        }
     }
 
     // Keep inactive alive vehicles on ground too
@@ -135,6 +149,19 @@ function animate() {
     const anyVehicleAlive = vehicles.some(v => v.isAlive);
     if (!gameState.isPaused && anyVehicleAlive) {
         updateVehicleMovement(delta);
+
+        // Continuous shooting while Space is held
+        if (keys['Space'] && activeVehicle && activeVehicle.isAlive) {
+            const now = Date.now();
+            const fireRate = activeVehicle.type === 'cannon'
+                ? CANNON_FIRE_RATE
+                : MACHINEGUN_FIRE_RATE;
+            if (now - gameState.lastShot > fireRate) {
+                shoot();
+                gameState.lastShot = now;
+            }
+        }
+
         updateTripodAI(delta);
         updateProjectiles();
         updateHeatRays(delta);
