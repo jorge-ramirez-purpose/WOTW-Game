@@ -4,8 +4,8 @@
 
 Battle against Martian tripods using multiple vehicles with different capabilities in this atmospheric 3D action game built entirely in the browser.
 
-![Game Screenshot](docs/screenshot.png)
-*Screenshot placeholder - add your own gameplay image*
+## Game Screenshot
+<img width="1512" height="820" alt="Screenshot 2026-03-18 at 11 14 02" src="https://github.com/user-attachments/assets/f1b9af93-69f0-4bea-9386-0b8b8d0f6ba0" />
 
 ## Features
 
